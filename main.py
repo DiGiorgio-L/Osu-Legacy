@@ -2,16 +2,13 @@ import pygame
 import sys
 from pathlib import Path
 
-#IMPORTACIONES DEL SDK
-from arcade_machine_sdk import GameBase, GameMeta
-
+from interface import GameBase
+from metadata import GameMetadata
 from configuracion import *
 from generador import Generador
 from hud import HUD
 from menu import Menu
 
-
-# CLASES DE EFECTOS VISUALES
 class EfectoVisual(pygame.sprite.Sprite):
     def __init__(self, centro, frames_lista):
         super().__init__()
@@ -21,7 +18,7 @@ class EfectoVisual(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=centro)
         
         self.acumulador = 0.0
-        self.velocidad_animacion = 30 # milisegundos por frame
+        self.velocidad_animacion = 30 
 
     def update(self, dt):
         self.acumulador += dt * 1000
@@ -45,11 +42,9 @@ class TextoFlotante(pygame.sprite.Sprite):
         self.pos_y = float(self.rect.y)
 
     def update(self, dt):
-        # Mover hacia arriba
         self.pos_y -= 120 * dt
         self.rect.y = int(self.pos_y)
         
-        # Reducir opacidad
         self.alpha -= 300 * dt
         
         if self.alpha <= 0:
@@ -58,7 +53,6 @@ class TextoFlotante(pygame.sprite.Sprite):
             self.image = self.image_original.copy()
             self.image.set_alpha(int(self.alpha))                
 
-# PANTALLA GAMEOVER 
 class PantallaGameOver:
     def __init__(self, puntos, imagen_fondo=None, imagen_gameover=None):
         self.puntos = puntos
@@ -105,20 +99,15 @@ class PantallaGameOver:
 
         mouse = pygame.mouse.get_pos()
         
-        #Botn Menu
         pygame.draw.rect(superficie, COLOR_BOTON_HOVER if self.btn_menu.collidepoint(mouse) else COLOR_BOTON, self.btn_menu, border_radius=12)
         pygame.draw.rect(superficie, COLOR_ACENTO, self.btn_menu, 2, border_radius=12)
         tm = self.font_pequena.render("Menú", True, COLOR_ACENTO)
         superficie.blit(tm, (self.btn_menu.centerx - tm.get_width() // 2, self.btn_menu.centery - tm.get_height() // 2))
 
-        #Boton Salir
         pygame.draw.rect(superficie, COLOR_BOTON_HOVER if self.btn_salir.collidepoint(mouse) else COLOR_BOTON, self.btn_salir, border_radius=12)
         pygame.draw.rect(superficie, (220, 60, 60), self.btn_salir, 2, border_radius=12)
         ts = self.font_pequena.render("Salir", True, (220, 60, 60))
         superficie.blit(ts, (self.btn_salir.centerx - ts.get_width() // 2, self.btn_salir.centery - ts.get_height() // 2))
-
-
-# Adaptada a la arquitectura del SDK
 
 class Juego:
     def __init__(self, modo, dificultad, ruta_cancion, imagen_fondo=None):
@@ -177,8 +166,8 @@ class Juego:
             pygame.mixer.music.load(ruta_cancion)
             pygame.mixer.music.set_volume(0.5)
             pygame.mixer.music.play(-1)
-        except Exception as e:
-            print(f"No se encontró la musica del juego: {ruta_cancion} - {e}")    
+        except Exception:
+            pass
 
     def handle_events(self, events):
         for evento in events:
@@ -243,7 +232,6 @@ class Juego:
         if self.hud.sin_vidas(): 
             self._terminar_juego()
             
-        # Actualizar grupos con dt
         self.vfx_group.update(dt) 
         self.textos_flotantes.update(dt) 
 
@@ -313,33 +301,21 @@ class Juego:
         self.hud.dibujar(superficie)
         self.textos_flotantes.draw(superficie)
 
-
-
-# CLASE NUCLEO DEL JUEGO
-
 class OsuLegacyGame(GameBase):
     def __init__(self, metadata):
         super().__init__(metadata)
-        self.estado = "MENU" # Estados posibles: MENU, JUGANDO, GAMEOVER
-        
-        #variables para las pantallas
+        self.estado = "MENU" 
         self.menu = None
         self.juego_actual = None
         self.game_over = None
         
-        #recursos
         self.fondo_menu = None
         self.fondo_juego = None
         self.img_titulo = None
         self.img_gameover = None
 
-    def start(self, surface: pygame.Surface) -> None:
-        super().start(surface)
-        
-        #cargamos las imagenes al arrancar el juego
+    def on_start(self) -> None:
         self.fondo_menu, self.fondo_juego, self.img_titulo, self.img_gameover = cargar_recursos()
-        
-        # Instanciamos el menu inicial
         self.menu = Menu(self.fondo_menu, self.img_titulo)
 
     def handle_events(self, events: list[pygame.event.Event]) -> None:
@@ -359,7 +335,7 @@ class OsuLegacyGame(GameBase):
                 self.menu = Menu(self.fondo_menu, self.img_titulo)
                 self.estado = "MENU"
             elif accion == "SALIR":
-                self.stop() # Finaliza el juego devolviendo el control a la MAquina Arcade
+                self._stop_context()
 
     def update(self, dt: float) -> None:
         if self.estado == "MENU":
@@ -368,7 +344,6 @@ class OsuLegacyGame(GameBase):
         elif self.estado == "JUGANDO":
             if not self.juego_actual.ejecutando:
                 puntos = self.juego_actual.hud.puntos
-                # Pasamos al estado Game Over
                 self.game_over = PantallaGameOver(puntos, self.fondo_juego, self.img_gameover)
                 self.estado = "GAMEOVER"
             else:
@@ -377,35 +352,25 @@ class OsuLegacyGame(GameBase):
         elif self.estado == "GAMEOVER":
             self.game_over.actualizar(dt)
 
-    # por si el SDK olvida enviarnos la superficie
-    def render(self, surface: pygame.Surface = None) -> None:
-        # Si el SDK no envIa la surface tomamos la pantalla principal directamente
-        if surface is None:
-            surface = pygame.display.get_surface()
-
-        # Dibujamos en la superficie
+    def draw(self) -> None:
         if self.estado == "MENU":
-            self.menu.dibujar(surface)
+            self.menu.dibujar(self.surface)
         elif self.estado == "JUGANDO":
-            self.juego_actual.dibujar(surface)
+            self.juego_actual.dibujar(self.surface)
         elif self.estado == "GAMEOVER":
-            self.game_over.dibujar(surface)
+            self.game_over.dibujar(self.surface)
 
 
-# EJECUCION INDEPENDIENTE PARA PRUEBAS
 if __name__ == "__main__":
     if not pygame.get_init():
         pygame.init()
         
-    # Metadatos obligatorios para el SDK
-    metadata = (GameMeta()
-        .with_title("Osu! Legacy")
-        .with_description("Rhythm Arcade Edition")
-        .with_release_date("26/02/2026") 
-        .with_group_number(7) 
-        .add_tag("Ritmo")
-        .add_tag("Arcade")
-        .add_author(["Rovel Pérez","Eduardo Díaz","Cesar rodríguez","Hemberth García"])) 
+    metadata = GameMetadata(
+        title="Osu! Legacy",
+        description="Rhythm Arcade Edition",
+        authors=["Rovel Pérez", "Eduardo Díaz", "Cesar rodríguez", "Hemberth García"],
+        group_number=7
+    )
 
     game = OsuLegacyGame(metadata)
-    game.run_independently()
+    game.run_preview()

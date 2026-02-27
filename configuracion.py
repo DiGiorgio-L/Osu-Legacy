@@ -1,11 +1,9 @@
 import pygame
 from pathlib import Path
-from arcade_machine_sdk import BASE_WIDTH, BASE_HEIGHT, DEFAULT_FPS
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 
-#CONSTANTES DEL SDK
-ANCHO = BASE_WIDTH
-ALTO = BASE_HEIGHT
-FPS = DEFAULT_FPS
+ANCHO = SCREEN_WIDTH
+ALTO = SCREEN_HEIGHT
 
 COLOR_FONDO = (40, 65, 160)
 COLOR_OBJETIVO = (0, 245, 255)
@@ -50,9 +48,7 @@ PUNTOS_JUICIO = {
 VIDAS_NORMALES = 3
 TIEMPO_APARICION_INICIAL = 1200
 
-#MANEJO DE RUTAS DINAMICAS (Requisito del SDK)
 GAME_DIR = Path(__file__).resolve().parent
-# Apuntamos a la carpeta assets dentro de LA ESTRUCTURA DEL PROYECTO
 ASSETS_DIR = GAME_DIR / "assets" / "imagenes"
 
 RUTA_FONDO_MENU = ASSETS_DIR / "imagen_fondo_menu.png"     
@@ -61,39 +57,33 @@ RUTA_TITULO = ASSETS_DIR / "titulo_arcade.png"
 RUTA_GAMEOVER = ASSETS_DIR / "icono_gameover.png"
 
 def cargar_recursos():
-    """Carga las imágenes. Devuelve: fondo_menu, fondo_juego, titulo, gameover."""
     fondo_menu = None
     fondo_juego = None
     titulo = None
     gameover = None
     
     try:
-        # 2. Cargar Fondo del Menu (Usamos .exists() de pathlib y str() para pygame)
         if RUTA_FONDO_MENU.exists():
             fondo_menu = pygame.image.load(str(RUTA_FONDO_MENU)).convert()
             fondo_menu = pygame.transform.scale(fondo_menu, (ANCHO, ALTO))
 
-        # 3. Cargar Fondo del Juego
         if RUTA_FONDO_JUEGO.exists():
             fondo_juego = pygame.image.load(str(RUTA_FONDO_JUEGO)).convert()
-            # Oscurecemos el fondo del juego para legibilidad
             oscurecer = pygame.Surface((ANCHO, ALTO))
             oscurecer.set_alpha(150)
             oscurecer.fill((0, 0, 0))
             fondo_juego.blit(oscurecer, (0, 0))
             fondo_juego = pygame.transform.scale(fondo_juego, (ANCHO, ALTO))
 
-        # 4. Cargar Titulo
         if RUTA_TITULO.exists():
             titulo = pygame.image.load(str(RUTA_TITULO)).convert_alpha()
             titulo = pygame.transform.scale(titulo, (400, 150)) 
             
-        # 5. Cargar Titulo de Gameover
         if RUTA_GAMEOVER.exists():
             gameover = pygame.image.load(str(RUTA_GAMEOVER)).convert_alpha()
             gameover = pygame.transform.smoothscale(gameover, (500, 120))
 
-    except Exception as e:
-        print(f"Error cargando recursos de imagen: {e}")
+    except Exception:
+        pass
     
     return fondo_menu, fondo_juego, titulo, gameover
