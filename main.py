@@ -402,10 +402,10 @@ if __name__ == "__main__":
         .with_title("Osu! Legacy")
         .with_description("Rhythm Arcade Edition")
         .with_release_date("26/02/2026") 
-        .with_group_number(5) 
+        .with_group_number(7) 
         .add_tag("Ritmo")
         .add_tag("Arcade")
-        .add_author(["Rovel Perez","Eduardo Diaz","Cesar rodriguez","Hembert Garcia"])) 
+        .add_author(["Rovel Pérez","Eduardo Díaz","Cesar rodríguez","Hemberth García"])) 
 
     game = OsuLegacyGame(metadata)
     game.run_independently()
